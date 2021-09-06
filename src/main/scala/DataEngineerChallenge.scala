@@ -40,7 +40,7 @@ object DataEngineerChallenge {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
       .builder()
-      .appName("Data Engineer Challenge - Web Log Parser")
+      .appName("Data Engineer Challenge - Web Log Analyser")
       .getOrCreate()
 
     val logLinesRdd = spark.sparkContext.textFile("data/2015_07_22_mktplace_shop_web_log_sample.log.gz")
@@ -86,7 +86,7 @@ object DataEngineerChallenge {
 
     // ****** 1. Sessionize the web log by IP. Sessionize = aggregrate all page hits by visitor/IP during a session.
     val sessionizedLogDf = logDfWithSessionId.select("client_ip", "session_id", "request", "duration_seconds")
-      // We aggregate all the hits in a set and group the data by IP and session
+      // We aggregate all the hits in a list and group the data by IP and session
       .groupBy($"client_ip", $"session_id")
       .agg(collect_list($"request").as("requests"), sum($"duration_seconds").as("session_duration_seconds"))
 
@@ -96,6 +96,7 @@ object DataEngineerChallenge {
     // The sessions with one hit will in inevitably decrease the average session time (session duration of 0) - but we
     // don't have a better way of determining the actual session time of a user with the given data
     val avgSessionTimeDf = sessionizedLogDf.select(mean("session_duration_seconds").as("average_session_duration"))
+
     saveAsTable(avgSessionTimeDf, "task2")
 
     // ****** 3. Determine unique URL visits per session. To clarify, count a hit to a unique URL only once per session.
